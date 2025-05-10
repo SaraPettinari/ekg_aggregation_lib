@@ -1,4 +1,4 @@
-type_tag: "Type"    # Type of an entity, df, class, etc.
+type_tag: "Type"    # how the Type of an entity, df, class, etc. is called
 
 
 # Neo4j configuration
