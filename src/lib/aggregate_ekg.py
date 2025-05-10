@@ -1,4 +1,4 @@
-from grammar import *
+from lib.grammar import *
 from config import LOG_REFERENCES as log, EKG_REFERENCES as ekg
 from neo4j import GraphDatabase
 
