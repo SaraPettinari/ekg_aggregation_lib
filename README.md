@@ -1,6 +1,6 @@
 # Query Library  
 
-A simple, lightweight query library for executing and managing database queries efficiently.  
+A query library for executing and managing EKG aggregation queries.  
 
 ## 🛠️ Setup  
 
@@ -9,6 +9,11 @@ First, create a virtual environment and activate it:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+```
+
+Install python dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
 Next, install the package in editable mode:
