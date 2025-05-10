@@ -1,0 +1,8 @@
+type_tag: "<TYPE_REF>"    # how the Type of an entity, df, class, etc. is called
+
+
+# Neo4j configuration
+neo4j:
+  URI: "<Neo4j-URI>"
+  username: "<USERNAME>"
+  password: "<PASSWORD>"

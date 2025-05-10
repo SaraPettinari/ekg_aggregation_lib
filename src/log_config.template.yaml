@@ -1,0 +1,21 @@
+event_id: "<EVENT_ID_REF>"    # unique identifier attribute for the event
+event_activity: "<EVENT_ACTIVITY_REF>"   # activity attribute name of the event
+event_timestamp: "<EVENT_TIME_REF>"    # timestamp attribute name of the event
+
+entity_id: "<ENTITY_ID_REF>"   # unique identifier attribute for the entity
+
+events:
+  path: "<YOUR_PATH_TO_EVENTS_CSV>"    # path to the event table
+  attr: ["<EVENT_ATTRS>"]   # attributes to retrieve from the event table
+
+# entities data: type, path (absolute), and attributes
+entities:
+  entity_1:
+    type: "<ENTITY_TYPE_1>"
+    path: "<YOUR_PATH_TO_ENTITY_1>"
+    attr: ["<ENTITY_1_ATTRS>"]
+  entity_2:
+    type: "<ENTITY_TYPE_2>"
+    path: "<YOUR_PATH_TO_ENTITY_2>"
+    attr: ["<ENTITY_2_ATTRS>"]
+

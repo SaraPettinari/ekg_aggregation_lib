@@ -24,6 +24,9 @@ pip install -e .
 ## 🔧 Configuration
 Before running the application, you need to customize the YAML configuration files:
 
+1. Duplicate `ekg_config.template.yaml` and `log_config.template.yaml` and remove _.template_ from the copied files name.
+
+2. Configure the files with your data:
 * `ekg_config.yaml`: Defines database connections, and EKG properties.
 
 * `log_config.yaml`: Manages event data configurations (paths, attributes, etc.).
