@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+venv/
+env/
+*.env
+pip-selfcheck.json
+*egg-info/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+.komodotools/
+.eclim/
+*.nbproject
+*.swp
+*.swo
+
+# Miscellaneous
+*.log
+*.bak
+*.tmp
+*.tmp.*
+*~

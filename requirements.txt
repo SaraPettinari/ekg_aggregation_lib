@@ -1,0 +1,4 @@
+neo4j==5.28.1
+pytz==2025.2
+PyYAML==6.0.2
+setuptools==80.4.0

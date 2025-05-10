@@ -1,0 +1,25 @@
+event_id: "id"    # unique identifier attribute for the event
+event_activity: "eventName"   # activity attribute name of the event
+event_timestamp: "eventDatetime"    # timestamp attribute name of the event
+
+entity_id: "wyId"   # unique identifier attribute for the entity
+
+events:
+  path: "/Users/sara/Documents/Repo/soccer-data/ekg_data/Italy/events_Italy_with_position.csv"    # path to the event table
+  attr: ['id', 'eventDatetime', 'eventName', 'playerId', 'matchId', 'teamId', 'pos_orig']   # attributes to retrieve from the event table
+
+# entities data: type, path (absolute), and attributes
+entities:
+  playerId:
+    type: "playerId"
+    path: "/Users/sara/Documents/Repo/soccer-data/ekg_data/Italy/entities/players_Italy.csv"
+    attr: ["currentTeamId", "birthDate", "role", "wyId", "shortName", "currentNationalTeamId"]
+  teamId:
+    type: "teamId"
+    path: "/Users/sara/Documents/Repo/soccer-data/ekg_data/Italy/entities/teams_Italy.csv"
+    attr: ["city", "name", "wyId"]
+  pos_orig:
+    type: "pos_orig"
+    path: "/Users/sara/Documents/Repo/soccer-data/ekg_data/Italy/entities/position_Italy.csv"
+    attr: ["wyId", "area", "zone"]
+

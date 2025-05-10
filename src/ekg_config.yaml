@@ -1,0 +1,8 @@
+type_tag: "Type"    # Type of an entity, df, class, etc.
+
+
+# Neo4j configuration
+neo4j:
+  URI: 'bolt://localhost:7687'
+  username: "neo4j"
+  password: "12341234"
