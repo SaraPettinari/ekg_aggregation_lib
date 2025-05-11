@@ -42,8 +42,6 @@ class AggregateEkg:
         print("Attribute aggregation query executed successfully.")
     
     def aggregate(self, aggr_spec: AggrSpecification):
-        query = q_lib.create_index_q('Class', 'Name')
-        self.session.run(query)
         
         ''' Execute the aggregation for the given specification '''
         for step in aggr_spec.steps:
@@ -53,20 +51,37 @@ class AggregateEkg:
                     self.aggregate_attributes(step.aggr_type, attr_aggr.name, attr_aggr.function)
         self.finalize() # finalize the aggregation
         
-        
         print("Node aggregation query executed successfully.")
 
+    def infer_rels(self):
+        print("Inferring relationships ...")
+        query = q_lib.generate_df_c_q()
+        self.session.run(query)
+        
+        query = q_lib.generate_corr_c_q()
+        self.session.run(query)
+        print("Relationships inferred successfully.")
 
 if __name__ == "__main__":
     aggregation = AggregateEkg()
     
-    # Example 
+    # Example 1
     step1 = AggrStep(aggr_type="ENTITIES", ent_type= "teamId", group_by=["country"], where=None, attr_aggrs=[AttrAggr(name='city', function=AggregationFunction.MULTISET)])
-    step2 = AggrStep(aggr_type="ENTITIES", ent_type= "playerId", group_by=["role"], where=None, attr_aggrs=[])
+    step2 = AggrStep(aggr_type="ENTITIES", ent_type= "playerId", group_by=["role"], where='birthYear > 1990', attr_aggrs=[])
     step3 = AggrStep(aggr_type="EVENTS", ent_type= None, where=None, group_by=[log.event_activity, "teamId","playerId"], 
                      attr_aggrs=[AttrAggr(name=log.event_timestamp, function=AggregationFunction.MINMAX),
                                  AttrAggr(name="matchId", function=AggregationFunction.MULTISET)])
     
-    aggr_spec = AggrSpecification(steps=[step1,step3])
+    aggr_spec = AggrSpecification(steps=[step2])
+    
+    # Example 2
+    
+    # step4 = AggrStep(aggr_type="EVENTS", ent_type= None, where=None, group_by=[log.event_activity], 
+    #                  attr_aggrs=[AttrAggr(name=log.event_timestamp, function=AggregationFunction.MINMAX),
+    #                              AttrAggr(name="teamId", function=AggregationFunction.MULTISET)])
+    # aggr_spec = AggrSpecification(steps=[step4])
+    
     
     aggregation.aggregate(aggr_spec)
+    aggregation.infer_rels()
+    

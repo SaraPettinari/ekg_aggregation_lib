@@ -55,6 +55,9 @@ class InitEkg:
         for entity in log.entities.keys():
             self.session.run(q_lib.create_index_q('Event', entity))
             
+        query = q_lib.create_index_q('Class', 'Name')
+        self.session.run(query)
+            
         print("All INDEX queries executed successfully.")
     
     def create_rels(self):

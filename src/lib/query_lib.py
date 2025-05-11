@@ -89,7 +89,7 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     
     of_clause = f"WHERE n.{ekg.type_tag} = '{step.ent_type}'" if step.ent_type else ""
     
-    where_clause = f"WHERE {step.where}" if step.where else ""
+    where_clause = f"WHERE n.{step.where}" if step.where else "" ## TODO: fix because it should be in AND with the other where, and there is the need to check if a type translation is needed, e.g., toInteger(...) ...
     
     class_query = aggregate_nodes(node_type, step.group_by)
               
@@ -185,7 +185,7 @@ def generate_df_c_q():
     return (f'''
         MATCH ( c1 : Class ) <-[:OBS]- ( e1 : Event ) -[df:DF]-> ( e2 : Event ) -[:OBS]-> ( c2 : Class )
         MATCH (e1) -[:CORR] -> (n) <-[:CORR]- (e2)
-        WHERE c1.{ekg.type_tag} = c2.{ekg.type_tag} AND n.{ekg.type_tag} = df.{ekg.type_tag}
+        WHERE c1.Agg = c2.Agg AND n.{ekg.type_tag} = df.{ekg.type_tag}
         WITH n.{ekg.type_tag} as EType,c1,count(df) AS df_freq,c2
         MERGE ( c1 ) -[rel2:DF_C {{EntityType:EType}}]-> ( c2 ) 
         ON CREATE SET rel2.count=df_freq
@@ -193,10 +193,6 @@ def generate_df_c_q():
 
 def generate_corr_c_q():
     return (f'''
-        MATCH ( c1 : Class ) <-[:OBS]- ( e1 : Event ) -[df:DF]-> ( e2 : Event ) -[:OBS]-> ( c2 : Class )
-        MATCH (e1) -[:CORR] -> (n) <-[:CORR]- (e2)
-        WHERE c1.{ekg.type_tag} = c2.{ekg.type_tag} AND n.{ekg.type_tag} = df.{ekg.type_tag}
-        WITH n.{ekg.type_tag} as EType,c1,count(df) AS df_freq,c2
-        MERGE ( c1 ) -[rel2:DF_C {{EntityType:EType}}]-> ( c2 ) 
-        ON CREATE SET rel2.count=df_freq
+        MATCH ( ce : Class ) <-[:OBS]- ( e : Event ) -[corr:CORR]-> ( t : Entity ) -[:OBS]-> ( ct : Class )
+        MERGE ( ce ) -[rel2:CORR_C]-> ( ct ) 
         ''')
