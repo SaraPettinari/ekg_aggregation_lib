@@ -1,4 +1,4 @@
-# Query Library  
+# Aggregation Query Library  
 
 A query library for executing and managing EKG aggregation queries.  
 
@@ -44,6 +44,6 @@ query_library/
 │   ├── config.py
 │   ├── ekg_config.yaml
 │   └── log_config.yaml 
-├── setup.py                  # Setup configuration
-└── README.md                 # This file
+├── setup.py                  # Python setup configuration
+└── README.md                 
 ```
