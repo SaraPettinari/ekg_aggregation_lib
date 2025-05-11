@@ -50,5 +50,3 @@ ekg_data['neo4j'] = Neo4jConfig(**ekg_data['neo4j'])
 # Instantiate configurations
 LOG_REFERENCES = LogReferences(**log_data)
 EKG_REFERENCES = EKGReferences(**ekg_data)
-
-print(ekg_data)
