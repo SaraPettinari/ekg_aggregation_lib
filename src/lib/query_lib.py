@@ -95,7 +95,7 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
               
     clauses = [match_clause, of_clause, where_clause, class_query]
     cypher_query = "\n".join(clause for clause in clauses if clause)
-    print(cypher_query)
+    #print(cypher_query)
     return cypher_query.strip()
 
 
@@ -195,4 +195,12 @@ def generate_corr_c_q():
     return (f'''
         MATCH ( ce : Class ) <-[:OBS]- ( e : Event ) -[corr:CORR]-> ( t : Entity ) -[:OBS]-> ( ct : Class )
         MERGE ( ce ) -[rel2:CORR_C]-> ( ct ) 
+        ''')
+    
+
+def count_not_aggregated_nodes_q(node_type : str):
+    return (f'''
+        MATCH (n:{node_type})
+        WHERE NOT EXISTS((n)-[:OBS]->())
+        RETURN COUNT(n) AS count
         ''')

@@ -1,4 +1,5 @@
 *_config.yaml
+/validation/*
 
 # Python
 __pycache__/

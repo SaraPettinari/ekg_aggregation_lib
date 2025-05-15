@@ -1,6 +1,6 @@
 # Aggregation Query Library  
 
-A query library for executing and managing EKG aggregation queries.  
+A query library for specifying and executing EKG aggregation queries.  
 
 ## 🛠️ Setup  
 
