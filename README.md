@@ -31,13 +31,45 @@ Before running the application, you need to customize the YAML configuration fil
 
 * `log_config.yaml`: Manages event data configurations (paths, attributes, etc.).
 
+### Example 
+```yaml
+...
+events:
+  path: "/events_Italy_with_position.csv"   
+  attr: ['id', 'eventDatetime', 'eventName', 'playerId', 'matchId', 'teamId', 'pos_orig'] 
+  attr_types:
+    id: "String"
+    eventDatetime: "Datetime"
+    eventName: "String"
+    playerId: "String"
+    matchId: "String"
+    teamId: "String"
+    pos_orig: "String"
+
+entities:
+  playerId:
+    type: "playerId"
+    path: "/players_Italy.csv"
+    attr: ["currentTeamId", "birthYear", "role", "wyId", "shortName", "currentNationalTeamId"]
+    attr_types: 
+      currentTeamId: "String"
+      birthYear: "Integer"
+      role: "String"
+      wyId: "String"
+      shortName: "String"
+      currentNationalTeamId: "String"
+... 
+```
+
+
 ## 📦 Package Structure  
 
 ```
 query_library/
 ├── src/
 │   ├── lib/
-│   │   ├── aggregate_ekg.py    
+│   │   ├── aggregate_ekg.py
+│   │   ├── collect_info_decorator.py    
 │   │   ├── grammar.py         
 │   │   └── init_ekg.py               
 │   ├── __init__.py               
