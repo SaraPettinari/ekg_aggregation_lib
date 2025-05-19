@@ -35,12 +35,24 @@ def infer_df_q(entity : str):
 
 def load_log_q(node_type, path : str, log_name: str, header_data : list, type = None) -> str:
     data_list = ''
+    log_node_type = 'events' if node_type == 'Event' else 'entities'
+    if log_node_type != 'entities':
+        attr_types = log.__getattribute__(log_node_type).__getattribute__('attr_types')
+    else:
+        attr_types = log.__getattribute__(log_node_type)[type].__getattribute__('attr_types')
     for data in header_data:
-        if 'time' in data:
-            data_list += ', {}: datetime(line.{})'.format(
-                data,data)
+        attr_type = attr_types.get(data, 'String')  # default to string if type unknown
+
+        if attr_type == 'Datetime':
+            data_list += f', {data}: datetime(line.{data})'
+        elif attr_type == 'Integer':
+            data_list += f', {data}: toInteger(line.{data})'
+        elif attr_type == 'Float':
+            data_list += f', {data}: toFloat(line.{data})'
+        elif attr_type == 'Boolean':
+            data_list += f', {data}: toBoolean(line.{data})'
         else:
-            data_list += ', {}: line.{}'.format(data, data)
+            data_list += f', {data}: line.{data}'
     
     if type:
         data_list += f', {ekg.type_tag}: "{type}"'
@@ -89,7 +101,7 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     
     of_clause = f"WHERE n.{ekg.type_tag} = '{step.ent_type}'" if step.ent_type else ""
     
-    where_clause = f"WHERE n.{step.where}" if step.where else "" ## TODO: fix because it should be in AND with the other where, and there is the need to check if a type translation is needed, e.g., toInteger(...) ...
+    where_clause = f" AND n.{step.where}" if step.where else "" 
     
     class_query = aggregate_nodes(node_type, step.group_by)
               

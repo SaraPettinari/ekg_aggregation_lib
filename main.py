@@ -40,7 +40,7 @@ def main(first_load : False):
                      attr_aggrs=[AttrAggr(name=log.event_timestamp, function=AggregationFunction.MINMAX),
                                  AttrAggr(name="matchId", function=AggregationFunction.MULTISET)])
     
-    aggr_spec = AggrSpecification(steps=[step1,step3])
+    aggr_spec = AggrSpecification(steps=[step1,step2,step3])
     aggregate_ekg(aggr_spec)
 
 

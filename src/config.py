@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 class NodeConfig:
     path: str
     attr: List[str]
+    attr_types: Dict[str, str]
     type: Optional[str] = None
 
 @dataclass
