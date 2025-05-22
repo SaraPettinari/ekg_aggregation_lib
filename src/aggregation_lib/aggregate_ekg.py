@@ -1,14 +1,13 @@
-import time
-import pandas as pd
-import lib.query_lib as q_lib
-from lib.grammar import *
-from config import LOG_REFERENCES as log, EKG_REFERENCES as ekg
+from config import get_log_config, get_ekg_config
+import aggregation_lib.query_lib as q_lib
+from aggregation_lib.grammar import *
 from neo4j import GraphDatabase
-from lib.collect_info_decorator import collect_metrics
-
+from aggregation_lib.collect_info_decorator import collect_metrics
 
 class AggregateEkg:
     def __init__(self):
+        log = get_log_config()
+        ekg = get_ekg_config()
         self.neo4j = ekg.neo4j
         self.log = log
         self.ekg = ekg

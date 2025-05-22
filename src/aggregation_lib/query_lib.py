@@ -1,6 +1,14 @@
-from config import LOG_REFERENCES as log, EKG_REFERENCES as ekg
-from lib.grammar import *
-        
+from functools import lru_cache
+from config import get_log_config as _get_log_config, get_ekg_config as _get_ekg_config
+from aggregation_lib.grammar import *
+
+@lru_cache
+def log(): return _get_log_config()
+
+@lru_cache
+def ekg(): return _get_ekg_config()
+
+
 ## GRAPH CREATION ##
 
 def get_indexes_q():
@@ -19,27 +27,27 @@ def infer_corr_q(entity : str):
         WITH split(e.{entity}, ',') AS items, e
         UNWIND items AS entity_id
         WITH entity_id, e
-        MATCH (t:Entity {{{log.entity_id}: entity_id}})
-        MERGE (e)-[:CORR {{{ekg.type_tag}: '{entity}'}}]->(t)
+        MATCH (t:Entity {{{log().entity_id}: entity_id}})
+        MERGE (e)-[:CORR {{{ekg().type_tag}: '{entity}'}}]->(t)
     """)
     
 def infer_df_q(entity : str):
     return (f"""
-        MATCH (n:Entity {{{ekg.type_tag}: '{entity}'}})<-[:CORR]-(e)
+        MATCH (n:Entity {{{ekg().type_tag}: '{entity}'}})<-[:CORR]-(e)
         WITH n, e AS nodes ORDER BY e.eventDatetime, ID(e)
         WITH n, collect(nodes) AS event_node_list
         UNWIND range(0, size(event_node_list)-2) AS i
         WITH n, event_node_list[i] AS e1, event_node_list[i+1] AS e2
-        MERGE (e1)-[df:DF {{Type:n.{ekg.type_tag}, ID:n.{log.entity_id}, edge_weight: 1}}]->(e2)
+        MERGE (e1)-[df:DF {{Type:n.{ekg().type_tag}, ID:n.{log().entity_id}, edge_weight: 1}}]->(e2)
         """)
 
 def load_log_q(node_type, path : str, log_name: str, header_data : list, type = None) -> str:
     data_list = ''
     log_node_type = 'events' if node_type == 'Event' else 'entities'
     if log_node_type != 'entities':
-        attr_types = log.__getattribute__(log_node_type).__getattribute__('attr_types')
+        attr_types = log().__getattribute__(log_node_type).__getattribute__('attr_types')
     else:
-        attr_types = log.__getattribute__(log_node_type)[type].__getattribute__('attr_types')
+        attr_types = log().__getattribute__(log_node_type)[type].__getattribute__('attr_types')
     for data in header_data:
         attr_type = attr_types.get(data, 'String')  # default to string if type unknown
 
@@ -55,7 +63,7 @@ def load_log_q(node_type, path : str, log_name: str, header_data : list, type = 
             data_list += f', {data}: line.{data}'
     
     if type:
-        data_list += f', {ekg.type_tag}: "{type}"'
+        data_list += f', {ekg().type_tag}: "{type}"'
 
     load_query = f'LOAD CSV WITH HEADERS FROM "file:///{path}" as line CREATE (e:{node_type} {{Log: "{log_name}" {data_list} }})'
 
@@ -74,15 +82,15 @@ def translate_aggr_function(attr: str, func: AggregationFunction):
     ''' Translate aggregation functions to Neo4j Cypher syntax 
     (Note that some attributes types are not compatible with aggregation functions. E.g., _sum_ or _avg_ does not work with timestamps) '''
     if func == AggregationFunction.SUM:
-        return f"sum({attr})"
+        return f"sum(n.{attr})"
     elif func == AggregationFunction.AVG:
-        return f"avg({attr})"
+        return f"avg(n.{attr})"
     elif func == AggregationFunction.MIN:
-        return f"min({attr})"
+        return f"min(n.{attr})"
     elif func == AggregationFunction.MAX:
-        return f"max({attr})"
+        return f"max(n.{attr})"
     elif func == AggregationFunction.MINMAX:
-        return [f"min({attr})",f"max({attr})"]
+        return [f"min(n.{attr})",f"max(n.{attr})"]
     elif func == AggregationFunction.MULTISET:
         return f""" COLLECT(n.{attr}) AS attrList
                 UNWIND attrList AS att
@@ -99,11 +107,11 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     node_type = "Event" if step.aggr_type == "EVENTS" else "Entity"
     match_clause = f"MATCH (n:{node_type})"
     
-    of_clause = f"WHERE n.{ekg.type_tag} = '{step.ent_type}'" if step.ent_type else ""
+    of_clause = f"WHERE n.{ekg().type_tag} = '{step.ent_type}'" if step.ent_type else ""
     
     where_clause = f" AND n.{step.where}" if step.where else "" 
     
-    class_query = aggregate_nodes(node_type, step.group_by)
+    class_query = aggregate_nodes(node_type, step.group_by, step.where)
               
     clauses = [match_clause, of_clause, where_clause, class_query]
     cypher_query = "\n".join(clause for clause in clauses if clause)
@@ -111,7 +119,7 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     return cypher_query.strip()
 
 
-def aggregate_nodes(node_type: str, group_by: List[str]) -> str:
+def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
     '''
     Cypher query construction for _nodes_ aggregation
     '''
@@ -119,7 +127,7 @@ def aggregate_nodes(node_type: str, group_by: List[str]) -> str:
     group_keys_clause = "WITH DISTINCT n, " + ", ".join(aliased_attrs)
 
     # Build a value based on distinct values of the group_by attributes
-    val_expr = ' + "_" + '.join(group_by) # will be used to create a unique value for the node
+    val_expr = ' + "_" + '.join([f'COALESCE({field}, "unknown")' for field in group_by]) # will be used to create a unique value for the node
     agg_type = "_".join(group_by) # will be used to create a type for the node
     new_val = ', '.join(group_by) + f", {val_expr} AS val"
     
@@ -127,25 +135,33 @@ def aggregate_nodes(node_type: str, group_by: List[str]) -> str:
     merge_props = [] 
 
     with_aggr = f"WITH n, {new_val}"
+    
+    id = None
 
     merge_clause = ""
     if node_type == "Event":
+        id = log().event_id
         merge_clause = (
             f'MERGE (c:Class {{ Name: val, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
             + (", " + ", ".join(merge_props) if merge_props else "")
+            + f", Where: '{where if where else ''}'"
             + " })"
         )
     elif node_type == "Entity":
+        id = log().entity_id
         merge_clause = (
-            f'MERGE (c:Class {{ Name: val, {ekg.type_tag}: n.{ekg.type_tag}, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
+            f'MERGE (c:Class {{ Name: val, {ekg().type_tag}: n.{ekg().type_tag}, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
             + (", " + ", ".join(merge_props) if merge_props else "")
+            + f", Where: '{where if where else ''}'"
             + " })"
         )
-   
+    with_aggr += f", COLLECT(n.{id}) as ids" # store all ids of the nodes that are aggregated
+    
+    create_set = f"ON CREATE SET c.Ids = ids \n ON MATCH SET c.Ids = COALESCE(c.Ids, []) + ids"
     obs_clause = 'WITH n,c \nMERGE (n)-[:OBS]->(c)'
 
     # Build the query
-    cypher_query_parts = [group_keys_clause, with_aggr, merge_clause]
+    cypher_query_parts = [group_keys_clause, with_aggr, merge_clause, create_set]
 
     # Conditionally add the match_event if aggr_expressions exist
     if aggr_expressions:
@@ -179,7 +195,7 @@ def finalize_c_q(node_type: str):
                 MATCH (n:Event)
                 WHERE  NOT EXISTS((n)-[:OBS]->())
                 WITH n
-                CREATE (c:Class {{ Name: n.{log.event_activity}, Origin: 'Events', ID: n.{log.event_id}, Agg: "singleton"}})
+                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Events', ID: n.{log().event_id}, Agg: "singleton"}})
                 WITH n,c
                 MERGE (n)-[:OBS]->(c)
                 ''')
@@ -188,17 +204,18 @@ def finalize_c_q(node_type: str):
                 MATCH (n:Entity)
                 WHERE  NOT EXISTS((n)-[:OBS]->())
                 WITH n
-                CREATE (c:Class {{ Name: n.{log.entity_id}, {ekg.type_tag}: n.{ekg.type_tag}, Origin: 'Entities', ID: n.{log.entity_id}, Agg: "singleton"}})
+                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entities', ID: n.{log().entity_id}, Agg: "singleton"}})
                 WITH n,c
                 MERGE (n)-[:OBS]->(c)
                 ''')
+        
         
 def generate_df_c_q():
     return (f'''
         MATCH ( c1 : Class ) <-[:OBS]- ( e1 : Event ) -[df:DF]-> ( e2 : Event ) -[:OBS]-> ( c2 : Class )
         MATCH (e1) -[:CORR] -> (n) <-[:CORR]- (e2)
-        WHERE c1.Agg = c2.Agg AND n.{ekg.type_tag} = df.{ekg.type_tag}
-        WITH n.{ekg.type_tag} as EType,c1,count(df) AS df_freq,c2
+        WHERE c1.Agg = c2.Agg AND n.{ekg().type_tag} = df.{ekg().type_tag}
+        WITH n.{ekg().type_tag} as EType,c1,count(df) AS df_freq,c2
         MERGE ( c1 ) -[rel2:DF_C {{EntityType:EType}}]-> ( c2 ) 
         ON CREATE SET rel2.count=df_freq
         ''')
@@ -216,3 +233,26 @@ def count_not_aggregated_nodes_q(node_type : str):
         WHERE NOT EXISTS((n)-[:OBS]->())
         RETURN COUNT(n) AS count
         ''')
+    
+    
+    
+############# WiP #############
+def finalize_c_noobs_q(node_type: str):
+    if node_type == "Event":
+        return(f'''
+                MATCH (class:Class)
+                UNWIND class.Ids AS id
+                WITH collect(DISTINCT id) AS allIds
+                MATCH (n:Event)
+                WHERE NOT n.id IN allIds
+                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Events', ID: n.{log().event_id}, Agg: "singleton", Ids: [n.id]}})
+                ''')
+    elif node_type == "Entity":    
+        return(f'''
+               MATCH (class:Class)
+                UNWIND class.Ids AS id
+                WITH collect(DISTINCT id) AS allIds
+                MATCH (n:Entity)
+                WHERE NOT n.id IN allIds
+                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entities', ID: n.{log().entity_id}, Agg: "singleton", Ids: [n.id]}})
+                ''')

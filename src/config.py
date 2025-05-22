@@ -33,21 +33,39 @@ class EKGReferences:
     
     
 # Load YAML files
-curr_path = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(curr_path,'log_config.yaml'), 'r') as file:
-    log_data = yaml.safe_load(file)
+LOG_REFERENCES = None
+EKG_REFERENCES = None
 
-with open(os.path.join(curr_path, 'ekg_config.yaml'), 'r') as file:
-    ekg_data = yaml.safe_load(file)
+def load_configs(base_path: Optional[str] = None):
+    global LOG_REFERENCES, EKG_REFERENCES
 
-log_data['events'] = NodeConfig(**log_data['events'])
+    if base_path is None:
+        base_path = os.path.dirname(os.path.abspath(__file__))
 
-log_data['entities'] = {
-    k: NodeConfig(**v) for k, v in log_data['entities'].items()
-}
+    with open(os.path.join(base_path, 'log_config.yaml'), 'r') as file:
+        log_data = yaml.safe_load(file)
 
-ekg_data['neo4j'] = Neo4jConfig(**ekg_data['neo4j'])
+    with open(os.path.join(base_path, 'ekg_config.yaml'), 'r') as file:
+        ekg_data = yaml.safe_load(file)
 
-# Instantiate configurations
-LOG_REFERENCES = LogReferences(**log_data)
-EKG_REFERENCES = EKGReferences(**ekg_data)
+    log_data['events'] = NodeConfig(**log_data['events'])
+    log_data['entities'] = {
+        k: NodeConfig(**v) for k, v in log_data['entities'].items()
+    }
+
+    ekg_data['neo4j'] = Neo4jConfig(**ekg_data['neo4j'])
+
+    LOG_REFERENCES = LogReferences(**log_data)
+    EKG_REFERENCES = EKGReferences(**ekg_data)
+    
+
+# Getters
+def get_log_config() -> LogReferences:
+    if LOG_REFERENCES is None:
+        raise RuntimeError("LOG_REFERENCES not loaded. Call load_configs() first.")
+    return LOG_REFERENCES
+
+def get_ekg_config() -> EKGReferences:
+    if EKG_REFERENCES is None:
+        raise RuntimeError("EKG_REFERENCES not loaded. Call load_configs() first.")
+    return EKG_REFERENCES

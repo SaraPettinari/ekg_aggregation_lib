@@ -1,0 +1,54 @@
+event_id: "id"    # unique identifier attribute for the event
+event_activity: "type"   # activity attribute name of the event
+event_timestamp: "time"    # timestamp attribute name of the event
+
+entity_id: "id"   # unique identifier attribute for the entity
+
+events:
+  path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/p2p.csv"    # path to the event table
+  attr: ['id', 'time', 'type', 'quotation','purchase_order','material','purchase_requisition','goods_receipt','invoice_receipt','payment']   # attributes to retrieve from the event table
+  attr_types:
+    id: "String"
+    time: "Datetime"
+
+# entities data: type, path (absolute), and attributes
+entities:
+  material:
+    type: "material"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/material.csv"
+    attr: ['id','Net_Price_EKPO_NETPR','Quantity_EKPO_MENGE','Delivery_Date_EKPO_BEDAT','Plant_EKPO_WERKS','Material_EKPO_MATNR','Storage_Location_EKPO_LGORT']
+    attr_types: 
+      Net_Price_EKPO_NETPR: "Integer"
+      Quantity_EKPO_MENGE: "Integer"
+      Delivery_Date_EKPO_BEDAT: "Datetime"
+  goods_receipt:
+    type: "goods_receipt"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/goods_receipt.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  invoice_receipt:
+    type: "invoice_receipt"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/invoice_receipt.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  payment:
+    type: "payment"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/payment.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  purchase_order:
+    type: "purchase_order"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/purchase_order.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  purchase_requisition:
+    type: "purchase_requisition"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/p2p/entities/purchase_requisition.csv"
+    attr: ["id","Purchasing_Group_EBAN_EKGRP"]
+    attr_types: 
+      id: "String"
+

@@ -1,10 +1,12 @@
-import lib.query_lib as q_lib
-from config import LOG_REFERENCES as log, EKG_REFERENCES as ekg
+from config import get_log_config, get_ekg_config
 from neo4j import GraphDatabase
 import time
+import aggregation_lib.query_lib as q_lib
 
 class InitEkg:
     def __init__(self):
+        log = get_log_config()
+        ekg = get_ekg_config()
         self.neo4j = ekg.neo4j
         self.log = log
         self.ekg = ekg
@@ -21,16 +23,16 @@ class InitEkg:
         print("Loading Events and Entities...")
         
         event_load = q_lib.load_log_q(node_type='Event', 
-                                        path=log.events.path, 
+                                        path=self.log.events.path, 
                                         log_name=log_name, 
-                                        header_data=log.events.attr)
+                                        header_data=self.log.events.attr)
         self.session.run(event_load)
         
-        for entity in log.entities.keys():
+        for entity in self.log.entities.keys():
             entity_load = q_lib.load_log_q(node_type='Entity', 
-                                                path=log.entities[entity].path, 
+                                                path=self.log.entities[entity].path, 
                                                 log_name=log_name, 
-                                                header_data=log.entities[entity].attr,
+                                                header_data=self.log.entities[entity].attr,
                                                 type=entity)
             self.session.run(entity_load)
         
@@ -49,10 +51,10 @@ class InitEkg:
             self.session.run(q_lib.drop_index_q(index_name))
         
         # create new indexes
-        self.session.run(q_lib.create_index_q('Entity', log.entity_id))
-        self.session.run(q_lib.create_index_q('Entity', ekg.type_tag))
-        self.session.run(q_lib.create_index_q('Event', log.event_activity))
-        for entity in log.entities.keys():
+        self.session.run(q_lib.create_index_q('Entity', self.log.entity_id))
+        self.session.run(q_lib.create_index_q('Entity', self.ekg.type_tag))
+        self.session.run(q_lib.create_index_q('Event', self.log.event_activity))
+        for entity in self.log.entities.keys():
             self.session.run(q_lib.create_index_q('Event', entity))
             
         query = q_lib.create_index_q('Class', 'Name')
@@ -62,7 +64,7 @@ class InitEkg:
     
     def create_rels(self):
         ''' Create relationships between events and entities '''
-        for entity in log.entities.keys():
+        for entity in self.log.entities.keys():
             corr_query = q_lib.infer_corr_q(entity)  
             try:
                 with self.session.begin_transaction() as tx:
