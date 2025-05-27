@@ -108,8 +108,9 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     match_clause = f"MATCH (n:{node_type})"
     
     of_clause = f"WHERE n.{ekg().type_tag} = '{step.ent_type}'" if step.ent_type else ""
-    
-    where_clause = f" AND n.{step.where}" if step.where else "" 
+       
+    prefix = "WHERE" if node_type == "Event" else "AND"
+    where_clause = f" {prefix} n.{step.where}" if step.where else ""
     
     class_query = aggregate_nodes(node_type, step.group_by, step.where)
               
@@ -123,45 +124,51 @@ def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
     '''
     Cypher query construction for _nodes_ aggregation
     '''
-    aliased_attrs = [f"n.{attr} AS {attr}" for attr in group_by]
-    group_keys_clause = "WITH DISTINCT n, " + ", ".join(aliased_attrs)
-
-    # Build a value based on distinct values of the group_by attributes
-    val_expr = ' + "_" + '.join([f'COALESCE({field}, "unknown")' for field in group_by]) # will be used to create a unique value for the node
+    if node_type not in ["Event", "Entity"]:    
+        raise ValueError(f"Unsupported node type: {node_type}. Supported types are 'Event' and 'Entity'.")
+    
     agg_type = "_".join(group_by) # will be used to create a type for the node
-    new_val = ', '.join(group_by) + f", {val_expr} AS val"
-    
+    cypher_query_parts = []
     aggr_expressions = []
-    merge_props = [] 
-
-    with_aggr = f"WITH n, {new_val}"
     
-    id = None
-
-    merge_clause = ""
     if node_type == "Event":
+        get_query = aggregate_events_with_entities_q(group_by, where) # create a query to aggregate events also considering if entities have already been aggregated
         id = log().event_id
         merge_clause = (
             f'MERGE (c:Class {{ Name: val, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
-            + (", " + ", ".join(merge_props) if merge_props else "")
             + f", Where: '{where if where else ''}'"
             + " })"
         )
+        cypher_query_parts = [get_query, merge_clause]
     elif node_type == "Entity":
+        aliased_attrs = [f"n.{attr} AS {attr}" for attr in group_by]
+        group_keys_clause = "WITH DISTINCT n, " + ", ".join(aliased_attrs)
+
+        # Build a value based on distinct values of the group_by attributes
+        val_expr = ' + "_" + '.join([f'COALESCE({field}, "unknown")' for field in group_by]) # will be used to create a unique value for the node
+        new_val = ', '.join(group_by) + f", {val_expr} AS val"
+        
+        with_aggr = f"WITH n, {new_val}"
         id = log().entity_id
         merge_clause = (
             f'MERGE (c:Class {{ Name: val, {ekg().type_tag}: n.{ekg().type_tag}, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
-            + (", " + ", ".join(merge_props) if merge_props else "")
             + f", Where: '{where if where else ''}'"
             + " })"
         )
-    with_aggr += f", COLLECT(n.{id}) as ids" # store all ids of the nodes that are aggregated
+        with_aggr += f", COLLECT(n.{id}) as ids" # store all ids of the nodes that are aggregated
+        cypher_query_parts = [group_keys_clause, with_aggr, merge_clause]
     
-    create_set = f"ON CREATE SET c.Ids = ids \n ON MATCH SET c.Ids = COALESCE(c.Ids, []) + ids"
+    
+    create_set = (
+    "ON CREATE SET c.Ids = ids, c.Count = size(ids)\n"
+    "ON MATCH SET c.Ids = COALESCE(c.Ids, []) + ids, "
+    "c.Count = size(COALESCE(c.Ids, []) + ids)"
+    )
+    
     obs_clause = 'WITH n,c \nMERGE (n)-[:OBS]->(c)'
 
     # Build the query
-    cypher_query_parts = [group_keys_clause, with_aggr, merge_clause, create_set]
+    cypher_query_parts.append(create_set)
 
     # Conditionally add the match_event if aggr_expressions exist
     if aggr_expressions:
@@ -177,6 +184,32 @@ def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
     cypher_query = "\n".join(cypher_query_parts)
 
     return cypher_query
+
+def aggregate_events_with_entities_q(group_by: List[str], where: str):
+    entities = []
+    for attr in group_by:
+        if attr in log().entities:
+            entities.append(attr)
+    
+    match = "MATCH (n:Event)"
+    variables = 'WITH n'
+    coalesce_clause = ", COALESCE(n.eventName, 'unknown') AS rawEventName"
+    var_tags = ['rawEventName']
+    for index,entity in enumerate(entities):
+        match += f"\nOPTIONAL MATCH (n)-[:CORR]->(e{index}:Entity {{{ekg().type_tag}: '{entity}'}})-[:OBS]->(c{index}:Class)"
+        variables += f', c{index}'
+        coalesce_clause += f', COALESCE(c{index}.ID, n.{entity}, "unknown") AS resolved{entity}'
+        var_tags.append(f'resolved{entity}')
+        
+    init_query = '\n'.join([match,variables,coalesce_clause])
+    
+    coalesced_parts = [f'COALESCE({col}, "unknown")' for col in var_tags]
+    coalesced_expression = ' + "_" + '.join(coalesced_parts)
+    with_clause = f'WITH n, {coalesced_expression} AS val, COLLECT(n.{log().event_id}) AS ids'
+    
+    return '\n'.join([init_query, with_clause])
+    
+
 
 def aggregate_attributes(aggr_type, attribute, agg_func):
     '''Aggregate attributes of nodes'''
@@ -195,7 +228,7 @@ def finalize_c_q(node_type: str):
                 MATCH (n:Event)
                 WHERE  NOT EXISTS((n)-[:OBS]->())
                 WITH n
-                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Events', ID: n.{log().event_id}, Agg: "singleton"}})
+                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Event', ID: n.{log().event_id}, Agg: "singleton"}})
                 WITH n,c
                 MERGE (n)-[:OBS]->(c)
                 ''')
@@ -204,7 +237,7 @@ def finalize_c_q(node_type: str):
                 MATCH (n:Entity)
                 WHERE  NOT EXISTS((n)-[:OBS]->())
                 WITH n
-                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entities', ID: n.{log().entity_id}, Agg: "singleton"}})
+                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entity', ID: n.{log().entity_id}, Agg: "singleton"}})
                 WITH n,c
                 MERGE (n)-[:OBS]->(c)
                 ''')
@@ -245,7 +278,7 @@ def finalize_c_noobs_q(node_type: str):
                 WITH collect(DISTINCT id) AS allIds
                 MATCH (n:Event)
                 WHERE NOT n.id IN allIds
-                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Events', ID: n.{log().event_id}, Agg: "singleton", Ids: [n.id]}})
+                CREATE (c:Class {{ Name: n.{log().event_activity}, Origin: 'Event', ID: n.{log().event_id}, Agg: "singleton", Ids: [n.id]}})
                 ''')
     elif node_type == "Entity":    
         return(f'''
@@ -254,5 +287,5 @@ def finalize_c_noobs_q(node_type: str):
                 WITH collect(DISTINCT id) AS allIds
                 MATCH (n:Entity)
                 WHERE NOT n.id IN allIds
-                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entities', ID: n.{log().entity_id}, Agg: "singleton", Ids: [n.id]}})
+                CREATE (c:Class {{ Name: n.{log().entity_id}, {ekg().type_tag}: n.{ekg().type_tag}, Origin: 'Entity', ID: n.{log().entity_id}, Agg: "singleton", Ids: [n.id]}})
                 ''')
