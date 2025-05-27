@@ -1,5 +1,5 @@
 import os
-import time
+import time, datetime
 import pandas as pd
 import config as config
 
@@ -25,17 +25,18 @@ def run_pipeline(config_dir: str, out_dir: str, aggr_spec_fn, first_load: bool =
         init_ekg.create_rels()
 
     def aggregate_ekg(aggr_spec: AggrSpecification):
+        curr_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         aggregator = AggregateEkg()
         aggregator.aggregate(aggr_spec)
         aggregator.infer_rels()
 
         df = pd.DataFrame.from_dict(aggregator.benchmark, orient='index', columns=['Time (s)'])
         df.index.name = 'step'
-        df.to_csv(os.path.join(out_dir, 'benchmark.csv'))
+        df.to_csv(os.path.join(out_dir, f'benchmark_{curr_datetime}.csv'))
         
         df = pd.DataFrame.from_dict(aggregator.verification, orient='index')
         df.index.name = 'step'
-        df.to_csv(os.path.join(out_dir, 'verification.csv'))
+        df.to_csv(os.path.join(out_dir, f'verification_{curr_datetime}.csv'))
 
     if first_load:
         init_db()
