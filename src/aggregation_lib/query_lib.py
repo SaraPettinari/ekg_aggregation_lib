@@ -193,7 +193,7 @@ def aggregate_events_with_entities_q(group_by: List[str], where: str):
     
     match = "MATCH (n:Event)"
     variables = 'WITH n'
-    coalesce_clause = ", COALESCE(n.eventName, 'unknown') AS rawEventName"
+    coalesce_clause = f", COALESCE(n.{log().event_activity}, 'unknown') AS rawEventName"
     var_tags = ['rawEventName']
     for index,entity in enumerate(entities):
         match += f"\nOPTIONAL MATCH (n)-[:CORR]->(e{index}:Entity {{{ekg().type_tag}: '{entity}'}})-[:OBS]->(c{index}:Class)"
