@@ -1,0 +1,65 @@
+event_id: "id"    # unique identifier attribute for the event
+event_activity: "type"   # activity attribute name of the event
+event_timestamp: "time"    # timestamp attribute name of the event
+
+entity_id: "id"   # unique identifier attribute for the entity
+
+events:
+  path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/logistics.csv"    # path to the event table
+  attr: ['id','type','time','Customer_Order','Transport_Document','Vehicle','Container','Handling_Unit','Truck','Forklift']   # attributes to retrieve from the event table
+  attr_types:
+    id: "String"
+    time: "Datetime"
+
+# entities data: type, path (absolute), and attributes
+entities:
+  Container:
+    type: "Container"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Container.csv"
+    attr: ['id','Amount_of_Handling_Units','Status','Weight']
+    attr_types: 
+      id: "String"
+      Amount_of_Handling_Units: "Integer"
+      Status: "String"
+      Weight: "Float"
+  Customer_Order:
+    type: "Customer_Order"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Customer_Order.csv"
+    attr: ["id", "Amount_of_Goods"]
+    attr_types: 
+      id: "String"
+      Amount_of_Goods: "Integer"
+  Forklift:
+    type: "Forklift"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Forklift.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  Handling_Unit:
+    type: "Handling_Unit"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Handling_Unit.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  Transport_Document:
+    type: "Transport_Document"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Transport_Document.csv"
+    attr: ["id",'Amount_of_Containers','Status']
+    attr_types: 
+      id: "String"
+      Amount_of_Containers: "Integer"
+      Status: "String"
+  Truck:
+    type: "Truck"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Truck.csv"
+    attr: ["id"]
+    attr_types: 
+      id: "String"
+  Vehicle:
+    type: "Vehicle"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/logistics/entities/Vehicle.csv"
+    attr: ["id","Departure_Date"]
+    attr_types: 
+      id: "String"
+      Departure_Date: "Datetime"
+

@@ -1,0 +1,59 @@
+event_id: "id"    # unique identifier attribute for the event
+event_activity: "type"   # activity attribute name of the event
+event_timestamp: "time"    # timestamp attribute name of the event
+
+entity_id: "id"   # unique identifier attribute for the entity
+
+events:
+  path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/order-management.csv"    # path to the event table
+  attr: ['id','type','time','products','items','orders','employees','packages','customers']   # attributes to retrieve from the event table
+  attr_types:
+    id: "String"
+    time: "Datetime"
+
+# entities data: type, path (absolute), and attributes
+entities:
+  customers:
+    type: "customers"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/customers.csv"
+    attr: ['id']
+    attr_types: 
+      id: "String"
+  employees:
+    type: "employees"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/employees.csv"
+    attr: ["id", "role"]
+    attr_types: 
+      id: "String"
+      role: "String"
+  items:
+    type: "items"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/items.csv"
+    attr: ["id", "weight","price"]
+    attr_types: 
+      id: "String"
+      weight: "Float"
+      price: "Float"
+  orders:
+    type: "orders"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/orders.csv"
+    attr: ["id","price"]
+    attr_types: 
+      id: "String"
+      price: "Float"
+  packages:
+    type: "packages"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/packages.csv"
+    attr: ["id","weight"]
+    attr_types: 
+      id: "String"
+      weight: "Float"
+  products:
+    type: "products"
+    path: "/Users/sara/Documents/Repo/aggregation_lib/datasets/order-management/entities/products.csv"
+    attr: ["id","weight","price"]
+    attr_types: 
+      id: "String"
+      weight: "Float"
+      price: "Float"
+
