@@ -2,6 +2,10 @@
 
 A query library for specifying and executing EKG aggregation queries.  
 
+> [!NOTE]
+> Evaluation results are available in the project [Wiki](https://github.com/SaraPettinari/ekg_aggregation_lib/wiki)
+
+
 ## 🛠️ Setup  
 
 Clone the repo:
@@ -142,7 +146,3 @@ query_library/
 * _OCEL2.0 Datasets_: downloaded from [ocelot](https://ocelot.pm/), based on the [ocel-standard](https://www.ocel-standard.org/event-logs/overview/) ➡️ `logistics`, `order management`, `procure-to-pay (p2p)`.
 
 * _Soccer Matches Dataset_: available on [github](https://github.com/SaraPettinari/soccer_data_pm).
-
-### BPIC 
-
-* _BPIC Datasets_: imported via the [PromG library](https://github.com/PromG-dev). 
