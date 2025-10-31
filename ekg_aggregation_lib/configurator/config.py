@@ -16,8 +16,8 @@ class LogReferences:
     event_activity: str
     event_timestamp: str
     entity_id: str
-    events: NodeConfig
-    entities: Dict[str, NodeConfig]
+    events: Optional[NodeConfig] = None
+    entities: Optional[Dict[str, NodeConfig]] = None
 
     
 @dataclass
@@ -29,6 +29,7 @@ class Neo4jConfig:
 @dataclass
 class EKGReferences:
     type_tag: str
+    entity_type_mode : str | None
     neo4j: Neo4jConfig
     
     
@@ -48,10 +49,12 @@ def load_configs(base_path: Optional[str] = None):
     with open(os.path.join(base_path, 'ekg_config.yaml'), 'r') as file:
         ekg_data = yaml.safe_load(file)
 
-    log_data['events'] = NodeConfig(**log_data['events'])
-    log_data['entities'] = {
-        k: NodeConfig(**v) for k, v in log_data['entities'].items()
-    }
+    if 'events' in log_data and log_data['events'] is not None:
+        log_data['events'] = NodeConfig(**log_data['events'])
+    if 'entities' in log_data and log_data['entities'] is not None:
+        log_data['entities'] = {
+            k: NodeConfig(**v) for k, v in log_data['entities'].items()
+        }
 
     ekg_data['neo4j'] = Neo4jConfig(**ekg_data['neo4j'])
 

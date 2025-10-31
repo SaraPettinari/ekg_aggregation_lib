@@ -1,7 +1,7 @@
-from config import get_log_config, get_ekg_config
+from ..configurator.config import get_log_config, get_ekg_config
 from neo4j import GraphDatabase
 import time
-import aggregation_lib.query_lib as q_lib
+from ..query import init_query as q_lib
 
 class InitEkg:
     def __init__(self):

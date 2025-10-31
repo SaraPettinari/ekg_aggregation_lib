@@ -1,0 +1,11 @@
+type_tag: "Type"    # how the Type of an entity, df, class, etc. is called
+
+entity_type_mode: 'label'  # specify if the entity type is represented as a label or as a property in the graph database  
+# label = :Entity:EntityType
+# property = :Entity (Type: 'EntityType')
+
+# Neo4j configuration
+neo4j:
+  URI: 'bolt://localhost:7687'
+  username: "neo4j"
+  password: "12341234"

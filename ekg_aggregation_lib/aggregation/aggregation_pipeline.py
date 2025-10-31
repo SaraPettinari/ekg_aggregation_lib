@@ -1,21 +1,25 @@
 import os
 import time, datetime
 import pandas as pd
-import config as config
+from ..configurator import config
+from ..configurator.knowledge import knowledge
+from ..aggregation.init_ekg import InitEkg
+from ..aggregation.aggregate_ekg import AggregateEkg
+from ..aggregation.grammar import *
 
-from aggregation_lib.init_ekg import InitEkg
-from aggregation_lib.aggregate_ekg import AggregateEkg
-from aggregation_lib.grammar import *
 
 def run_pipeline(config_dir: str, out_dir: str, aggr_spec_fn, first_load: bool = False):
     # Load config from the specified directory
     config.load_configs(config_dir)
-    log = config.get_log_config()
-    ekg = config.get_ekg_config()
+    knowledge.log = config.get_log_config()
+    knowledge.ekg = config.get_ekg_config()
+    
+    log = knowledge.log
+    ekg = knowledge.ekg
 
     # Create output directory if needed
     if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        os.makedirs(out_dir)
 
     def init_db():
         init_ekg = InitEkg()

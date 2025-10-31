@@ -27,11 +27,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Install python dependencies:
-```bash
-pip install -r requirements.txt
-```
-
 Next, install the package in editable mode:
 ```bash
 pip install -e .

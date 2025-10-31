@@ -1,0 +1,6 @@
+event_id: "ID"    # unique identifier attribute for the event
+event_activity: "activity"   # activity attribute name of the event
+event_timestamp: "timestamp"    # timestamp attribute name of the event
+
+entity_id: "sysId"   # unique identifier attribute for the entity
+
