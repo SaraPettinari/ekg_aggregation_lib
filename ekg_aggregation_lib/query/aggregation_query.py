@@ -37,11 +37,10 @@ def generate_cypher_from_step_q(step: AggrStep) -> str:
     node_type = "Event" if step.aggr_type == "EVENTS" else "Entity"
     
     if EKG().entity_type_mode == "label" and node_type == "Entity":
-        match_clause = f"MATCH (n:{node_type}:{EKG().type_tag})"
-    
+        match_clause = f"MATCH (n:{node_type}:{step.ent_type})"
+        of_clause = ""    
     else:
         match_clause = f"MATCH (n:{node_type})"
-        
         of_clause = f"WHERE n.{EKG().type_tag} = '{step.ent_type}'" if step.ent_type else ""
        
     prefix = "WHERE" if (node_type == "Event" or EKG().entity_type_mode == 'label') else "AND"
@@ -76,8 +75,23 @@ def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
         )
         cypher_query_parts = [get_query, merge_clause]
     elif node_type == "Entity":
+        
+        has_type_tag = EKG().type_tag in group_by
+
+        if has_type_tag:
+            group_by.remove(EKG().type_tag)
+                        
         aliased_attrs = [f"n.{attr} AS {attr}" for attr in group_by]
         group_keys_clause = "WITH DISTINCT n, " + ", ".join(aliased_attrs)
+
+        if has_type_tag:
+            if EKG().entity_type_mode == "property":
+                group_keys_clause += f"n.{EKG().type_tag} AS etype"
+            elif EKG().entity_type_mode == "label":
+                group_keys_clause += f"labels(n)[1] AS etype"
+            else:
+                raise ValueError(f"Unsupported entity_type_mode: {EKG().entity_type_mode}. Supported modes are 'property' and 'label'.")
+            group_by.append('etype')
 
         # Build a value based on distinct values of the group_by attributes
         val_expr = ' + "_" + '.join([f'COALESCE({field}, "unknown")' for field in group_by]) # will be used to create a unique value for the node
@@ -87,6 +101,10 @@ def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
         id = LOG().entity_id
         merge_clause = (
             f'MERGE (c:Class {{ Name: val, {EKG().type_tag}: n.{EKG().type_tag}, Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
+            + f", Where: '{where if where else ''}'"
+            + " })"
+        ) if EKG().entity_type_mode == "property" else (
+            f'MERGE (c:Class {{ Name: val, {EKG().type_tag}: labels(n)[1], Origin: "{node_type}", ID: val, Agg: "{agg_type}"'
             + f", Where: '{where if where else ''}'"
             + " })"
         )
@@ -103,7 +121,7 @@ def aggregate_nodes(node_type: str, group_by: List[str], where: str) -> str:
     obs_clause = 'WITH n,c \nMERGE (n)-[:OBS]->(c)'
 
     # Build the query
-    cypher_query_parts.append(create_set)
+    #cypher_query_parts.append(create_set)
 
     # Conditionally add the match_event if aggr_expressions exist
     if aggr_expressions:
@@ -199,7 +217,7 @@ def generate_df_c_q():
         MATCH ( c1 : Class ) <-[:OBS]- ( e1 : Event ) -[df:DF]-> ( e2 : Event ) -[:OBS]-> ( c2 : Class )
         MATCH (e1) -[:CORR] -> (n) <-[:CORR]- (e2)
         {where_with_clause} 
-        MERGE ( c1 ) -[rel2:DF_C {{EntityType:EType}}]-> ( c2 ) 
+        MERGE ( c1 ) -[rel2:DF_C {{{EKG().type_tag}:EType}}]-> ( c2 ) 
         ON CREATE SET rel2.count=df_freq
         ''')
 
